@@ -1,0 +1,178 @@
+blueprint:
+  name: Schlafzimmer Beleuchtung mit Nachtmodus
+  description: >
+    Steuerung der Schlafzimmer-Beleuchtung über einen Bewegungsmelder.
+    Tagsüber leuchtet das Licht hell, morgens und abends gedimmt.
+    Ein manueller Nachtmodus verhindert, dass das Licht nachts angeht –
+    ideal für unregelmäßige Schlafzeiten am Wochenende.
+  domain: automation
+  input:
+    bewegungsmelder:
+      name: Bewegungsmelder
+      description: Der Bewegungsmelder im Schlafzimmer.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion
+
+    licht:
+      name: Licht (dimmbar)
+      description: Das dimmbare Licht im Schlafzimmer.
+      selector:
+        entity:
+          domain: light
+
+    nachtmodus_toggle:
+      name: Nachtmodus-Toggle
+      description: >
+        Ein input_boolean oder ein Switch, der den Nachtmodus aktiviert.
+        Erstelle vorher einen input_boolean, z. B. "input_boolean.nachtmodus_schlafzimmer".
+      selector:
+        entity:
+          domain:
+            - input_boolean
+            - switch
+
+    helligkeit_tag:
+      name: Helligkeit Tagsüber
+      description: Helligkeit in Prozent (tagsüber).
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "%"
+
+    helligkeit_abend_morgen:
+      name: Helligkeit Abend / Morgen
+      description: Helligkeit in Prozent (morgens und abends).
+      default: 15
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "%"
+
+    # HINWEIS ZU UHRZEITEN:
+    # Die Morgen- und Abend-Uhrzeiten (Standard: 07:30 / 21:00) sind weiter unten
+    # in den Template-Bedingungen direkt eingetragen. Passe dort die Zeiten
+    # an, wenn du andere Werte wünschst. (Jinja2-Templates unterstützen kein !input.)
+    # Die Auto-Ausschalt-Zeit für den Nachtmodus (Standard: 09:00) ist in der
+    # zweiten Automation (Automation 2) ebenfalls direkt eingetragen.
+
+    ausschalt_wartezeit:
+      name: Ausschalt-Wartezeit nach letzter Bewegung
+      description: >
+        Wie lange das Licht nach der letzten Bewegung noch bleibt (in Sekunden).
+      default: 120
+      selector:
+        number:
+          min: 10
+          max: 1800
+          unit_of_measurement: "s"
+
+# ---------------------------------------------------------------------------
+# AUTOMATION 1: Bewegung erkannt → Licht einschalten (mit Helligkeit)
+# ---------------------------------------------------------------------------
+trigger:
+  - platform: state
+    entity_id: !input bewegungsmelder
+    to: "on"
+
+condition:
+  # Nachtmodus muss NICHT aktiv sein
+  - condition: state
+    entity_id: !input nachtmodus_toggle
+    state: "off"
+
+action:
+  # Helligkeit anhand der Uhrzeit bestimmen
+  # HINWEIS: !input kann innerhalb von Jinja2-Templates nicht verwendet werden.
+  # Daher werden die Uhrzeiten hier direkt eingefügt – passe sie an, wenn du
+  # die Standardwerte im Blueprint-Input geändert hast.
+  - choose:
+      # MORGEN: vor 07:30 Uhr (= uhrzeit_morgen_ende)
+      - conditions:
+          - condition: template
+            value_template: "{{ now().strftime('%H:%M') < '07:30' }}"
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input licht
+            data:
+              brightness_pct: !input helligkeit_abend_morgen
+              transition: 2
+
+      # ABEND: ab 21:00 Uhr (= uhrzeit_abend_start)
+      - conditions:
+          - condition: template
+            value_template: "{{ now().strftime('%H:%M') >= '21:00' }}"
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input licht
+            data:
+              brightness_pct: !input helligkeit_abend_morgen
+              transition: 2
+
+    # STANDARD (Tagsüber): zwischen 07:30 und 21:00 Uhr
+    default:
+      - service: light.turn_on
+        target:
+          entity_id: !input licht
+        data:
+          brightness_pct: !input helligkeit_tag
+          transition: 1
+
+  # Licht nach Inaktivität wieder ausschalten
+  - wait_for_trigger:
+      - platform: state
+        entity_id: !input bewegungsmelder
+        to: "on"
+    timeout:
+      seconds: !input ausschalt_wartezeit
+  - condition: state
+    entity_id: !input bewegungsmelder
+    state: "off"
+  - service: light.turn_off
+    target:
+      entity_id: !input licht
+    data:
+      transition: 2
+
+---
+# ---------------------------------------------------------------------------
+# AUTOMATION 2: Nachtmodus morgens automatisch ausschalten
+# ---------------------------------------------------------------------------
+blueprint:
+  name: Nachtmodus Auto-Ausschalt
+  description: >
+    Schaltet den Nachtmodus jeden Morgen automatisch wieder aus,
+    damit er nicht "vergessen" bleibt.
+  domain: automation
+  input:
+    nachtmodus_toggle:
+      name: Nachtmodus-Toggle
+      description: Derselbe Toggle wie in der Hauptautomation.
+      selector:
+        entity:
+          domain:
+            - input_boolean
+            - switch
+
+    # HINWEIS: Die Uhrzeit (Standard: 09:00) ist direkt im Trigger unten eingetragen.
+    # Passe sie dort an, wenn du einen anderen Zeitpunkt wünschst.
+
+trigger:
+  - platform: time
+    at: "09:00"  # <-- Hier deine gewünschte Uhrzeit ändern
+
+condition:
+  - condition: state
+    entity_id: !input nachtmodus_toggle
+    state: "on"
+
+action:
+  - service: input_boolean.turn_off
+    target:
+      entity_id: !input nachtmodus_toggle
