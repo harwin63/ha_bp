@@ -1,0 +1,62 @@
+# ===========================================================================
+# HELFER FÜR SCHLAFZIMMER-BELEUCHTUNG
+# ===========================================================================
+# Diese Helfer werden in Home Assistant unter:
+#   Settings → Helpers → Add Helper
+# erstellt. Diese Datei dient als Dokumentation / Referenz.
+# ===========================================================================
+
+# --- Nachtmodus-Toggle ---------------------------------------------------
+input_boolean:
+  nachtmodus:
+    name: Nachtmodus
+    icon: mdi:moon-waning-crescent
+
+# --- Zeitsteuerung --------------------------------------------------------
+input_select:
+  schlafzimmer_zeitsteuerung_modus:
+    name: Schlafzimmer Zeitsteuerung Modus
+    icon: mdi:clock-outline
+    options:
+      - Uhrzeit
+      - Sonnen-Event
+
+# --- Uhrzeiten ------------------------------------------------------------
+input_datetime:
+  schlafzimmer_nachtmodus_ausschalt_uhrzeit:
+    name: Schlafzimmer Nachtmodus Ausschalt-Uhrzeit
+    icon: mdi:alarm
+    has_time: true
+    initial: "09:00"
+
+  schlafzimmer_morgen_ende_uhrzeit:
+    name: Schlafzimmer Morgen Ende (Uhrzeit)
+    icon: mdi:clock-outline
+    has_time: true
+    initial: "07:30"
+
+  schlafzimmer_abend_start_uhrzeit:
+    name: Schlafzimmer Abend Start (Uhrzeit)
+    icon: mdi:clock-outline
+    has_time: true
+    initial: "21:00"
+
+# --- Offsets für Sonnen-Events --------------------------------------------
+input_number:
+  schlafzimmer_morgen_ende_offset:
+    name: Schlafzimmer Morgen Ende Offset
+    icon: mdi:clock-plus
+    min: -120
+    max: 120
+    step: 5
+    initial: 60
+    unit_of_measurement: "min"
+
+  schlafzimmer_abend_start_offset:
+    name: Schlafzimmer Abend Start Offset
+    icon: mdi:clock-plus
+    min: -120
+    max: 120
+    step: 5
+    initial: 0
+    unit_of_measurement: "min"
