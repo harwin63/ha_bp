@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------
+# AUTOMATION 2: Nachtmodus morgens automatisch ausschalten
+# ---------------------------------------------------------------------------
+blueprint:
+  name: Nachtmodus Auto-Ausschalt
+  description: >
+    Schaltet den Nachtmodus jeden Morgen automatisch wieder aus,
+    damit er nicht "vergessen" bleibt.
+  domain: automation
+  input:
+    nachtmodus_toggle:
+      name: Nachtmodus-Toggle
+      description: Derselbe Toggle wie in der Hauptautomation.
+      selector:
+        entity:
+          domain:
+            - input_boolean
+            - switch
+
+    # HINWEIS: Die Uhrzeit (Standard: 09:00) ist direkt im Trigger unten eingetragen.
+    # Passe sie dort an, wenn du einen anderen Zeitpunkt wünschst.
+
+trigger:
+  - platform: time
+    at: "09:00"  # <-- Hier deine gewünschte Uhrzeit ändern
+
+condition:
+  - condition: state
+    entity_id: !input nachtmodus_toggle
+    state: "on"
+
+action:
+  - service: input_boolean.turn_off
+    target:
+      entity_id: !input nachtmodus_toggle
