@@ -137,12 +137,12 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {%- set modus = states(!input zeitsteuerung_modus) -%}
+              {%- set modus = states('input_select.schlafzimmer_zeitsteuerung_modus') -%}
               {%- if modus == 'Uhrzeit' -%}
-                {%- set morgen_ende = states(!input morgen_ende_uhrzeit) -%}
+                {%- set morgen_ende = states('input_datetime.schlafzimmer_morgen_ende_uhrzeit') -%}
                 {{ now().strftime('%H:%M') < morgen_ende }}
               {%- else -%}
-                {%- set offset_min = states(!input morgen_ende_offset) | float(0) -%}
+                {%- set offset_min = states('input_number.schlafzimmer_morgen_ende_offset') | float(0) -%}
                 {%- set sonnenaufgang = states.sun.rising | as_timestamp -%}
                 {%- set morgen_ende = (sonnenaufgang + (offset_min * 60)) | as_datetime -%}
                 {{ now() < morgen_ende }}
@@ -159,12 +159,12 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {%- set modus = states(!input zeitsteuerung_modus) -%}
+              {%- set modus = states('input_select.schlafzimmer_zeitsteuerung_modus') -%}
               {%- if modus == 'Uhrzeit' -%}
-                {%- set abend_start = states(!input abend_start_uhrzeit) -%}
+                {%- set abend_start = states('input_datetime.schlafzimmer_abend_start_uhrzeit') -%}
                 {{ now().strftime('%H:%M') >= abend_start }}
               {%- else -%}
-                {%- set offset_min = states(!input abend_start_offset) | float(0) -%}
+                {%- set offset_min = states('input_number.schlafzimmer_abend_start_offset') | float(0) -%}
                 {%- set sonnenuntergang = states.sun.setting | as_timestamp -%}
                 {%- set abend_start = (sonnenuntergang + (offset_min * 60)) | as_datetime -%}
                 {{ now() >= abend_start }}
