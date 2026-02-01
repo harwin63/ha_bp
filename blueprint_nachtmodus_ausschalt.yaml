@@ -1,28 +1,38 @@
-# ---------------------------------------------------------------------------
-# AUTOMATION 2: Nachtmodus morgens automatisch ausschalten
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# BLUEPRINT: Nachtmodus Auto-Ausschalt
+# ===========================================================================
+# Voraussetzung: Die Helfer aus "helfer.yaml" müssen vorher erstellt werden.
+# ===========================================================================
+
 blueprint:
   name: Nachtmodus Auto-Ausschalt
   description: >
     Schaltet den Nachtmodus jeden Morgen automatisch wieder aus,
-    damit er nicht "vergessen" bleibt.
+    damit er nicht "vergessen" bleibt. Die Uhrzeit wird über einen
+    Helfer im Dashboard steuerbar gemacht.
   domain: automation
   input:
     nachtmodus_toggle:
       name: Nachtmodus-Toggle
-      description: Derselbe Toggle wie in der Hauptautomation.
+      description: Der input_boolean für den Nachtmodus (aus helfer.yaml).
       selector:
         entity:
-          domain:
-            - input_boolean
-            - switch
+          domain: input_boolean
 
-    # HINWEIS: Die Uhrzeit (Standard: 09:00) ist direkt im Trigger unten eingetragen.
-    # Passe sie dort an, wenn du einen anderen Zeitpunkt wünschst.
+    nachtmodus_ausschalt_uhrzeit:
+      name: Nachtmodus Ausschalt-Uhrzeit (Helfer)
+      description: >
+        Der input_datetime-Helfer für die Ausschalt-Uhrzeit (aus helfer.yaml).
+      selector:
+        entity:
+          domain: input_datetime
 
 trigger:
-  - platform: time
-    at: "09:00"  # <-- Hier deine gewünschte Uhrzeit ändern
+  - platform: template
+    value_template: >
+      {{ now().strftime('%H:%M') == states('input_datetime.schlafzimmer_nachtmodus_ausschalt_uhrzeit') }}
+    for:
+      seconds: 0
 
 condition:
   - condition: state
