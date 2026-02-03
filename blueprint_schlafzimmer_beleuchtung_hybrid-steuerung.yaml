@@ -1,6 +1,6 @@
 blueprint:
-  name: Schlafzimmer Beleuchtung (Hybrid & Adaptive)
-  description: "Steuert Licht über Bewegung/Präsenz. Nutzt Adaptive Lighting & Nachtmodus-Check."
+  name: Schlafzimmer Beleuchtung (Final Hybrid & Adaptive)
+  description: "Steuert Licht über Bewegung/Präsenz. Nutzt Adaptive Lighting & Nachtmodus. Zeiten können fest eingegeben oder via Helfer (auch Sonnen-Template-Sensoren) gesteuert werden."
   domain: automation
   input:
     bewegungsmelder:
@@ -8,7 +8,7 @@ blueprint:
       selector:
         entity:
           domain: binary_sensor
-          device_class: [motion, occupancy] # Akzeptiert beide Typen
+          device_class: [motion, occupancy]
     licht:
       name: Licht
       selector:
@@ -16,13 +16,13 @@ blueprint:
           domain: light
     adaptive_sleep_switch:
       name: Adaptive Lighting Sleep Mode Schalter
-      description: "Die Entität 'switch.adaptive_lighting_sleep_mode_...'"
+      description: "Entität 'switch.adaptive_lighting_sleep_mode_...'"
       selector:
         entity:
           domain: switch
     nachtmodus_toggle:
       name: Nachtmodus-Schalter
-      description: "Wenn AN, bleibt das Licht aus."
+      description: "Wenn dieser Schalter AN ist, bleibt das Licht aus."
       selector:
         entity:
           domain: [switch, input_boolean]
@@ -35,10 +35,11 @@ blueprint:
         time: {}
     morgen_ende_uhrzeit_helfer:
       name: Morgen Ende (Helfer-Option)
+      description: "Wähle hier deinen Sonnenaufgang-Template-Sensor oder einen input_datetime."
       default: []
       selector:
         entity:
-          domain: input_datetime
+          domain: [input_datetime, sensor]
 
     # --- ABEND EINSTELLUNGEN ---
     abend_start_uhrzeit_fest:
@@ -48,10 +49,11 @@ blueprint:
         time: {}
     abend_start_uhrzeit_helfer:
       name: Abend Start (Helfer-Option)
+      description: "Wähle hier deinen Sonnenuntergang-Template-Sensor oder einen input_datetime."
       default: []
       selector:
         entity:
-          domain: input_datetime
+          domain: [input_datetime, sensor]
 
     # --- WARTEZEIT ---
     ausschalt_wartezeit_fest:
@@ -70,13 +72,15 @@ blueprint:
           domain: input_number
 
 variables:
+  # Inputs in Variablen laden
   m_ende_f: !input morgen_ende_uhrzeit_fest
   m_ende_h: !input morgen_ende_uhrzeit_helfer
   a_start_f: !input abend_start_uhrzeit_fest
   a_start_h: !input abend_start_uhrzeit_helfer
   w_fest: !input ausschalt_wartezeit_fest
   w_helfer: !input ausschalt_wartezeit_helfer
-  # Zeit-Logik
+
+  # Entscheidungs-Logik
   morgen_ende: "{{ states(m_ende_h) if m_ende_h != [] else m_ende_f }}"
   abend_start: "{{ states(a_start_h) if a_start_h != [] else a_start_f }}"
   wartezeit: "{{ states(w_helfer) | int if w_helfer != [] else w_fest | int }}"
@@ -112,7 +116,7 @@ action:
             data:
               transition: 2
 
-    # TAGSÜBER (Hell)
+    # DEFAULT: TAGSÜBER (Hell)
     default:
       - service: switch.turn_off
         target:
@@ -123,7 +127,7 @@ action:
         data:
           transition: 1
 
-  # Warten bis Bewegung dauerhaft weg ist
+  # Warten bis Bewegung weg ist
   - wait_for_trigger:
       - platform: state
         entity_id: !input bewegungsmelder
