@@ -20,10 +20,16 @@ blueprint:
     Helfer 3 – Letzte Kosten:
       Name:     z.B. "Fahrradakku Kosten EUR"
       Min: 0 / Max: 999 / Schritt: 0.001 / Einheit: €
+
+    EINMALIG GLOBAL (nur einmal für alle Geräte):
+    Helfer 4 – Strompreis:
+      Name:     z.B. "Strompreis pro kWh"
+      Min: 0 / Max: 1 / Schritt: 0.01 / Einheit: €/kWh
+      Startwert: dein aktueller Strompreis, z.B. 0.32
     ═══════════════════════════════════════════════
 
   domain: automation
-  source_url: https://github.com/home-assistant/core
+  source_url: https://github.com/harwin63/ha_bp/edit/main/blueprint_ladetracker_vollstaendig.yaml
 
   input:
 
