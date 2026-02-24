@@ -10,7 +10,7 @@ Eine Sammlung von Blueprints für Home Assistant Automationen – wiederverwendb
 |---|---|
 | [⚡ Energie-Ladetracker](#-energie-ladetracker) | Misst Verbrauch & Kosten beim Laden von Akkus |
 | [🌙 Nachtmodus Auto-Ausschaltung](#-nachtmodus-auto-ausschaltung) | Schaltet den Nachtmodus an Werktagen automatisch ab |
-| [💡 Schlafzimmer Beleuchtung](#-schlafzimmer-beleuchtung-hybrid--adaptive) | Bewegungsgesteuerte Lichtsteuerung mit Adaptive Lighting |
+| [💡 Beleuchtung Hybrid & Adaptive](#-beleuchtung-hybrid--adaptive) | Bewegungsgesteuerte Lichtsteuerung mit Adaptive Lighting |
 
 ---
 
@@ -34,13 +34,13 @@ Schaltet einen Nachtmodus-Toggle an Werktagen automatisch zu einer konfigurierba
 
 ---
 
-## 💡 Schlafzimmer Beleuchtung (Hybrid & Adaptive)
+## 💡 Beleuchtung Hybrid & Adaptive
 
-Bewegungsgesteuerte Lichtsteuerung mit drei automatischen Modi: Morgen (gedimmt), Tagsüber (hell) und Abend (gedimmt). Integriert Adaptive Lighting und einen Nachtmodus-Schalter. Zeiten flexibel per Festwert oder Helfer/Sonnen-Template-Sensoren steuerbar.
+Bewegungsgesteuerte Lichtsteuerung mit drei automatischen Modi: Morgen (gedimmt), Tagsüber (hell) und Abend (gedimmt). Einsetzbar in beliebigen Räumen. Integriert Adaptive Lighting und einen Nachtmodus-Schalter. Zeiten flexibel per Festwert oder Helfer/Sonnen-Template-Sensoren steuerbar.
 
-➡️ [Zur Anleitung](schlafzimmer-beleuchtung/README.md)
+➡️ [Zur Anleitung](beleuchtung-hybrid-adaptive/README.md)
 
-[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/harwin63/ha_bp/main/schlafzimmer-beleuchtung/blueprint_schlafzimmer_beleuchtung_hybrid-steuerung.yaml)
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/harwin63/ha_bp/main/beleuchtung-hybrid-adaptive/blueprint_beleuchtung_hybrid-steuerung.yaml)
 
 ---
 
@@ -56,8 +56,8 @@ ha_bp/
 ├── nachtmodus-ausschaltung/
 │   ├── blueprint_nachtmodus_ausschalt.yaml
 │   └── README.md
-└── schlafzimmer-beleuchtung/
-    ├── blueprint_schlafzimmer_beleuchtung_hybrid-steuerung.yaml
+└── beleuchtung-hybrid-adaptive/
+    ├── blueprint_beleuchtung_hybrid-steuerung.yaml
     ├── helfer.yaml
     └── README.md
 ```
