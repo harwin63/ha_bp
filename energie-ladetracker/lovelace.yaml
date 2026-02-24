@@ -30,10 +30,10 @@ cards:
   - type: entities
     title: "Letzter abgeschlossener Ladevorgang"
     entities:
-      - entity: input_number.DEIN_GERAET_verbrauch_kwh
+      - entity: sensor.DEIN_GERAET_verbrauch_kwh_anzeige
         name: "Verbrauch"
         icon: mdi:lightning-bolt
-      - entity: input_number.DEIN_GERAET_kosten_eur
+      - entity: sensor.DEIN_GERAET_kosten_eur_anzeige
         name: "Kosten"
         icon: mdi:currency-eur
 
