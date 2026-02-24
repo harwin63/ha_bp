@@ -1,0 +1,283 @@
+blueprint:
+  name: "⚡ Energie-Ladetracker (vollständig)"
+  description: >
+    Misst Verbrauch und Kosten eines Ladevorgangs vollständig und persistent.
+    Zeigt Echtzeit-Werte während des Ladens, speichert Ergebnis nach Ladeende
+    und setzt sich automatisch für den nächsten Ladevorgang zurück.
+
+    ═══════════════════════════════════════════════
+    EINMALIGE VORBEREITUNG (pro Gerät, 3 Helfer anlegen):
+    Einstellungen → Geräte & Dienste → Helfer → Helfer erstellen → Zahl
+    
+    Helfer 1 – Interner Startwert:
+      Name:     z.B. "Fahrradakku Ladestart intern"
+      Min: 0 / Max: 999999 / Schritt: 0.001 / Einheit: kWh
+    
+    Helfer 2 – Letzter Verbrauch:
+      Name:     z.B. "Fahrradakku Verbrauch kWh"
+      Min: 0 / Max: 999 / Schritt: 0.001 / Einheit: kWh
+    
+    Helfer 3 – Letzte Kosten:
+      Name:     z.B. "Fahrradakku Kosten EUR"
+      Min: 0 / Max: 999 / Schritt: 0.001 / Einheit: €
+    ═══════════════════════════════════════════════
+
+  domain: automation
+  source_url: https://github.com/home-assistant/core
+
+  input:
+
+    # ── Gerät ──────────────────────────────────────────────────
+    device_name:
+      name: "📛 Gerätename"
+      description: "Frei wählbarer Name, erscheint in Benachrichtigungen. Z.B. 'Fahrradakku', 'E-Scooter', 'Laptop'."
+      default: "Akku"
+      selector:
+        text:
+
+    # ── Sensoren ───────────────────────────────────────────────
+    power_sensor:
+      name: "⚡ Leistungssensor (Watt)"
+      description: "Sensor des Smartplugs mit aktueller Leistung in Watt."
+      selector:
+        entity:
+          domain: sensor
+          device_class: power
+
+    energy_sensor:
+      name: "🔋 Energiezähler (kWh)"
+      description: "Sensor des Smartplugs mit kumuliertem Energieverbrauch in kWh. Dieser Wert darf nie zurückspringen!"
+      selector:
+        entity:
+          domain: sensor
+          device_class: energy
+
+    # ── Input-Number Helfer (vorab anlegen!) ──────────────────
+    helper_start:
+      name: "🔧 Helfer: Startwert (intern)"
+      description: >
+        input_number Helfer für den internen Zählerstand bei Ladestart.
+        Einheit: kWh / Min: 0 / Max: 999999 / Schritt: 0.001
+      selector:
+        entity:
+          domain: input_number
+
+    helper_verbrauch:
+      name: "🔧 Helfer: Verbrauch kWh (Ergebnis)"
+      description: >
+        input_number Helfer für den gespeicherten Verbrauch des letzten Ladevorgangs.
+        Einheit: kWh / Min: 0 / Max: 999 / Schritt: 0.001
+      selector:
+        entity:
+          domain: input_number
+
+    helper_kosten:
+      name: "🔧 Helfer: Kosten EUR (Ergebnis)"
+      description: >
+        input_number Helfer für die gespeicherten Kosten des letzten Ladevorgangs.
+        Einheit: € / Min: 0 / Max: 999 / Schritt: 0.001
+      selector:
+        entity:
+          domain: input_number
+
+    # ── Schwellwerte ───────────────────────────────────────────
+    power_on_threshold:
+      name: "▶️ Einschaltschwelle (Watt)"
+      description: "Ab dieser Leistung gilt Laden als gestartet. Standbystrom deines Geräts beachten!"
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "W"
+          mode: slider
+
+    power_off_threshold:
+      name: "⏹️ Ausschaltschwelle (Watt)"
+      description: "Unter dieser Leistung gilt Laden als beendet. Etwas über dem Standbystrom einstellen."
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "W"
+          mode: slider
+
+    power_off_duration:
+      name: "⏱️ Wartezeit bei Ladeende (Minuten)"
+      description: "Wie lange muss die Leistung unter der Schwelle bleiben? Verhindert Fehlauslösungen bei kurzen Unterbrechungen."
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: "min"
+          mode: slider
+
+    power_on_delay:
+      name: "⏱️ Wartezeit bei Ladestart (Sekunden)"
+      description: "Kurze Verzögerung nach Einschalten, um Einschaltspitzen zu ignorieren."
+      default: 10
+      selector:
+        number:
+          min: 5
+          max: 60
+          unit_of_measurement: "s"
+          mode: slider
+
+    # ── Kosten ─────────────────────────────────────────────────
+    electricity_price_helper:
+      name: "💰 Strompreis-Helfer (input_number)"
+      description: >
+        Dein vorhandener input_number Helfer mit dem aktuellen Strompreis in €/kWh.
+        So gilt eine Preisänderung automatisch für alle Blueprint-Instanzen!
+      selector:
+        entity:
+          domain: input_number
+
+    # ── Benachrichtigungen ─────────────────────────────────────
+    notify_on_start:
+      name: "🔔 Benachrichtigung bei Ladestart"
+      description: "Soll beim Erkennen des Ladevorgangs eine Meldung erscheinen?"
+      default: true
+      selector:
+        boolean:
+
+    notify_service:
+      name: "📱 Benachrichtigungsdienst"
+      description: >
+        Welcher Dienst soll die Abschluss-Benachrichtigung senden?
+        notify.persistent_notification = HA-Oberfläche
+        notify.mobile_app_DEIN_HANDY   = Push aufs Smartphone
+      default: "notify.persistent_notification"
+      selector:
+        text:
+
+
+# ── Variablen ──────────────────────────────────────────────────
+variables:
+  power_sensor: !input power_sensor
+  energy_sensor: !input energy_sensor
+  helper_start: !input helper_start
+  helper_verbrauch: !input helper_verbrauch
+  helper_kosten: !input helper_kosten
+  device_name: !input device_name
+  electricity_price_helper: !input electricity_price_helper
+  electricity_price: "{{ states(electricity_price_helper) | float(0.32) }}"
+  notify_on_start: !input notify_on_start
+  notify_service: !input notify_service
+
+
+# ── Trigger ────────────────────────────────────────────────────
+trigger:
+  - platform: numeric_state
+    id: "laden_gestartet"
+    entity_id: !input power_sensor
+    above: !input power_on_threshold
+    for:
+      seconds: !input power_on_delay
+
+  - platform: numeric_state
+    id: "laden_beendet"
+    entity_id: !input power_sensor
+    below: !input power_off_threshold
+    for:
+      minutes: !input power_off_duration
+
+
+# ── Aktionen ───────────────────────────────────────────────────
+action:
+  - choose:
+
+      # ════════════════════════════════════════════════════════
+      # LADEVORGANG GESTARTET
+      # ════════════════════════════════════════════════════════
+      - conditions:
+          - condition: trigger
+            id: "laden_gestartet"
+          # Nur auslösen wenn noch kein Ladevorgang läuft
+          - condition: template
+            value_template: >
+              {{ states(helper_start) | float(0) == 0 }}
+
+        sequence:
+          # Aktuellen Zählerstand als Referenz speichern
+          - service: input_number.set_value
+            target:
+              entity_id: "{{ helper_start }}"
+            data:
+              value: "{{ states(energy_sensor) | float(0) }}"
+
+          # Optional: Benachrichtigung bei Start
+          - if:
+              - condition: template
+                value_template: "{{ notify_on_start }}"
+            then:
+              - service: "{{ notify_service }}"
+                data:
+                  title: "🔌 {{ device_name }} – Laden gestartet"
+                  message: >
+                    Ladevorgang erkannt.
+                    Zählerstand: {{ states(energy_sensor) | float(0) | round(3) }} kWh
+
+
+      # ════════════════════════════════════════════════════════
+      # LADEVORGANG BEENDET
+      # ════════════════════════════════════════════════════════
+      - conditions:
+          - condition: trigger
+            id: "laden_beendet"
+          # Nur wenn tatsächlich ein Ladevorgang lief
+          - condition: template
+            value_template: >
+              {{ states(helper_start) | float(0) > 0 }}
+
+        sequence:
+          # ── Verbrauch berechnen & speichern ─────────────────
+          - service: input_number.set_value
+            target:
+              entity_id: "{{ helper_verbrauch }}"
+            data:
+              value: >
+                {% set aktuell = states(energy_sensor) | float(0) %}
+                {% set start   = states(helper_start) | float(0) %}
+                {{ [aktuell - start, 0] | max | round(3) }}
+
+          # ── Kosten berechnen & speichern ─────────────────────
+          - service: input_number.set_value
+            target:
+              entity_id: "{{ helper_kosten }}"
+            data:
+              value: >
+                {% set aktuell = states(energy_sensor) | float(0) %}
+                {% set start   = states(helper_start) | float(0) %}
+                {% set kwh     = [aktuell - start, 0] | max %}
+                {{ (kwh * electricity_price) | round(3) }}
+
+          # ── Ergebnis-Benachrichtigung ─────────────────────────
+          - service: "{{ notify_service }}"
+            data:
+              title: "✅ {{ device_name }} – Ladevorgang abgeschlossen"
+              message: >
+                {% set aktuell = states(energy_sensor) | float(0) %}
+                {% set start   = states(helper_start) | float(0) %}
+                {% set kwh     = [aktuell - start, 0] | max | round(3) %}
+                {% set kosten  = (kwh * electricity_price) | round(2) %}
+                🔋 Verbrauch:  {{ kwh }} kWh
+                💰 Kosten:     {{ kosten }} €
+                📊 Strompreis: {{ electricity_price }} €/kWh
+
+          # ── Kurz warten, dann Startwert zurücksetzen ──────────
+          - delay:
+              seconds: 3
+
+          - service: input_number.set_value
+            target:
+              entity_id: "{{ helper_start }}"
+            data:
+              value: 0
+
+
+# ── Modus: single verhindert parallele Läufe ──────────────────
+mode: single
+max_exceeded: silent
