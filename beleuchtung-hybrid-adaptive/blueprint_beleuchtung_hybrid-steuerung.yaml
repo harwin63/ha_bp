@@ -1,0 +1,164 @@
+blueprint:
+  name: Beleuchtung Hybrid & Adaptive
+  description: >
+    Steuert Licht über Bewegung/Präsenz in beliebigen Räumen (Schlafzimmer, Flur, 
+    Büro, Badezimmer, ...). Nutzt Adaptive Lighting & Nachtmodus. Zeiten können 
+    fest eingegeben oder via Helfer (auch Sonnen-Template-Sensoren) gesteuert werden.
+  domain: automation
+  source_url: https://raw.githubusercontent.com/harwin63/ha_bp/main/beleuchtung-hybrid-adaptive/blueprint_beleuchtung_hybrid-steuerung.yaml
+
+  input:
+    bewegungsmelder:
+      name: Bewegungsmelder / Präsenzsensor
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: [motion, occupancy]
+
+    licht:
+      name: Licht
+      selector:
+        entity:
+          domain: light
+
+    adaptive_sleep_switch:
+      name: Adaptive Lighting Sleep Mode Schalter
+      description: "Entität 'switch.adaptive_lighting_sleep_mode_...'"
+      selector:
+        entity:
+          domain: switch
+
+    nachtmodus_toggle:
+      name: Nachtmodus-Schalter
+      description: "Wenn dieser Schalter AN ist, bleibt das Licht aus."
+      selector:
+        entity:
+          domain: [switch, input_boolean]
+
+    # --- MORGEN EINSTELLUNGEN ---
+    morgen_ende_uhrzeit_fest:
+      name: Morgen Ende (Festwert)
+      description: "Uhrzeit bis zu der der Morgen-Modus (gedimmt) gilt."
+      default: "09:00:00"
+      selector:
+        time: {}
+
+    morgen_ende_uhrzeit_helfer:
+      name: Morgen Ende (Helfer-Option)
+      description: "Optional: Sonnenaufgang-Template-Sensor oder input_datetime. Hat Vorrang vor dem Festwert."
+      default: []
+      selector:
+        entity:
+          domain: [input_datetime, sensor]
+
+    # --- ABEND EINSTELLUNGEN ---
+    abend_start_uhrzeit_fest:
+      name: Abend Start (Festwert)
+      description: "Uhrzeit ab der der Abend-Modus (gedimmt) gilt."
+      default: "20:00:00"
+      selector:
+        time: {}
+
+    abend_start_uhrzeit_helfer:
+      name: Abend Start (Helfer-Option)
+      description: "Optional: Sonnenuntergang-Template-Sensor oder input_datetime. Hat Vorrang vor dem Festwert."
+      default: []
+      selector:
+        entity:
+          domain: [input_datetime, sensor]
+
+    # --- WARTEZEIT ---
+    ausschalt_wartezeit_fest:
+      name: Wartezeit (Festwert Sek.)
+      description: "Sekunden nach letzter Bewegung bis das Licht ausgeht."
+      default: 120
+      selector:
+        number:
+          min: 5
+          max: 1800
+          unit_of_measurement: s
+
+    ausschalt_wartezeit_helfer:
+      name: Wartezeit (Helfer-Option)
+      description: "Optional: input_number Helfer für dynamische Wartezeit. Hat Vorrang vor dem Festwert."
+      default: []
+      selector:
+        entity:
+          domain: input_number
+
+
+variables:
+  m_ende_f: !input morgen_ende_uhrzeit_fest
+  m_ende_h: !input morgen_ende_uhrzeit_helfer
+  a_start_f: !input abend_start_uhrzeit_fest
+  a_start_h: !input abend_start_uhrzeit_helfer
+  w_fest: !input ausschalt_wartezeit_fest
+  w_helfer: !input ausschalt_wartezeit_helfer
+
+  morgen_ende: "{{ states(m_ende_h) if m_ende_h != [] else m_ende_f }}"
+  abend_start: "{{ states(a_start_h) if a_start_h != [] else a_start_f }}"
+  wartezeit: "{{ states(w_helfer) | int if w_helfer != [] else w_fest | int }}"
+
+
+trigger:
+  - platform: state
+    entity_id: !input bewegungsmelder
+    from: "off"
+    to: "on"
+
+
+condition:
+  - condition: state
+    entity_id: !input nachtmodus_toggle
+    state: "off"
+
+
+action:
+  - choose:
+      # GEDIMMT (Morgen oder Abend)
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: "{{ now().strftime('%H:%M:%S') < morgen_ende }}"
+              - condition: template
+                value_template: "{{ now().strftime('%H:%M:%S') >= abend_start }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input adaptive_sleep_switch
+          - service: light.turn_on
+            target:
+              entity_id: !input licht
+            data:
+              transition: 2
+
+    # DEFAULT: TAGSÜBER (Hell)
+    default:
+      - service: switch.turn_off
+        target:
+          entity_id: !input adaptive_sleep_switch
+      - service: light.turn_on
+        target:
+          entity_id: !input licht
+        data:
+          transition: 1
+
+  # Warten bis Bewegung weg ist
+  - wait_for_trigger:
+      - platform: state
+        entity_id: !input bewegungsmelder
+        from: "on"
+        to: "off"
+        for:
+          seconds: "{{ wartezeit }}"
+
+  - service: light.turn_off
+    target:
+      entity_id: !input licht
+    data:
+      transition: 3
+
+
+mode: single
+max_exceeded: silent
