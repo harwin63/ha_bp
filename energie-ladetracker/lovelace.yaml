@@ -42,6 +42,13 @@ cards:
     entities:
       - entity: input_number.strompreis_pro_kwh
         name: "Strompreis"
+
+  - type: entities
+    title: "Steckdose"
+    entities:
+      - entity: switch.DEIN_SMARTPLUG_SCHALTER
+        name: "Steckdose Fahrradakku"
+        icon: mdi:power-socket-de
         icon: mdi:currency-eur
 
   - type: button
