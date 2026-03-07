@@ -20,16 +20,10 @@ blueprint:
     Helfer 3 – Letzte Kosten:
       Name:     z.B. "Fahrradakku Kosten EUR"
       Min: 0 / Max: 999 / Schritt: 0.001 / Einheit: €
-
-    EINMALIG GLOBAL (nur einmal für alle Geräte):
-    Helfer 4 – Strompreis:
-      Name:     z.B. "Strompreis pro kWh"
-      Min: 0 / Max: 1 / Schritt: 0.01 / Einheit: €/kWh
-      Startwert: dein aktueller Strompreis, z.B. 0.32
     ═══════════════════════════════════════════════
 
   domain: automation
-  source_url: https://github.com/harwin63/ha_bp/edit/main/energie-ladetracker/blueprint_ladetracker_vollstaendig.yaml
+  source_url: https://github.com/home-assistant/core
 
   input:
 
@@ -85,6 +79,14 @@ blueprint:
       selector:
         entity:
           domain: input_number
+
+    # ── Smartplug Schalter ─────────────────────────────────────
+    steckdosen_schalter:
+      name: "🔌 Smartplug Schalter"
+      description: "Der Schalter der Smartplug-Steckdose – wird nach dem Ladeende automatisch ausgeschaltet um Nachladespitzen zu verhindern."
+      selector:
+        entity:
+          domain: switch
 
     # ── Schwellwerte ───────────────────────────────────────────
     power_on_threshold:
@@ -162,6 +164,7 @@ blueprint:
 
 # ── Variablen ──────────────────────────────────────────────────
 variables:
+  steckdosen_schalter: !input steckdosen_schalter
   power_sensor: !input power_sensor
   energy_sensor: !input energy_sensor
   helper_start: !input helper_start
@@ -282,6 +285,11 @@ action:
               entity_id: "{{ helper_start }}"
             data:
               value: 0
+
+          # ── Steckdose ausschalten → verhindert Nachladespitzen ─
+          - service: switch.turn_off
+            target:
+              entity_id: "{{ steckdosen_schalter }}"
 
 
 # ── Modus: single verhindert parallele Läufe ──────────────────
