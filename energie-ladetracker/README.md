@@ -148,6 +148,7 @@ Insgesamt vier Template-Helfer anlegen – zwei für die Live-Anzeige während d
 | 🔧 Helfer Verbrauch | Helfer 2 (z.B. `Fahrradakku Verbrauch kWh`) |
 | 🔧 Helfer Kosten | Helfer 3 (z.B. `Fahrradakku Kosten EUR`) |
 | 💰 Strompreis-Helfer | Globaler Strompreis-Helfer |
+| 🔌 Smartplug Schalter | Der switch-Schalter des Smartplugs – wird nach Ladeende automatisch ausgeschaltet |
 | ▶️ Einschaltschwelle | Ab wieviel Watt gilt Laden als gestartet (Standard: 2W) |
 | ⏹️ Ausschaltschwelle | Unter wieviel Watt gilt Laden als beendet (Standard: 5W) |
 | ⏱️ Wartezeit Ladeende | Minuten unter Schwelle bis "Laden beendet" ausgelöst wird |
